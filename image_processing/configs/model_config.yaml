@@ -1,0 +1,23 @@
+# Model Configuration
+model:
+  name: mobilenet_v2
+  version: "2.0"
+  framework: tensorflow
+  input_size: 224
+  channels: 3
+  preprocessing:
+    normalize: true
+    resize_method: bilinear
+  pretrained: true
+  weights_path: models/pretrained/mobilenet_v2.h5
+
+# Inference Configuration
+inference:
+  batch_size: 16
+  confidence_threshold: 0.5
+  top_k: 5
+  device: cpu  # Change to gpu if available
+
+# Class labels
+labels:
+  path: models/pretrained/imagenet_labels.txt 

@@ -1,0 +1,191 @@
+openapi: 3.0.0
+info:
+  title: Image Recognition System API
+  description: API for uploading and classifying images
+  version: 1.0.0
+  contact:
+    name: Your Name
+    email: your.email@example.com
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /api/upload:
+    post:
+      summary: Upload an image
+      description: Uploads an image to the system for storage and classification
+      tags:
+        - Image Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadRequest'
+      responses:
+        '200':
+          description: Image uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/classify:
+    post:
+      summary: Classify an image
+      description: Classify an image that has been previously uploaded
+      tags:
+        - Image Processing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifyRequest'
+      responses:
+        '200':
+          description: Classification results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifyResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Image not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    get:
+      summary: System health check
+      description: Check if the API Gateway is healthy
+      tags:
+        - System
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: 'API Gateway is healthy!'
+
+components:
+  schemas:
+    UploadRequest:
+      type: object
+      required:
+        - image_data
+      properties:
+        image_data:
+          type: string
+          description: Base64 encoded image data
+          example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAA..."
+        content_type:
+          type: string
+          description: Content type of the image
+          default: image/jpeg
+          example: image/jpeg
+        bucket:
+          type: string
+          description: MinIO bucket to store the image in
+          default: input-images
+          example: input-images
+        object_name:
+          type: string
+          description: Custom object name for the image (optional)
+          example: my-image.jpg
+
+    UploadResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        bucket:
+          type: string
+          example: input-images
+        object:
+          type: string
+          example: 20230601123045_e7b1c3d4e5f6.jpg
+        url:
+          type: string
+          example: http://localhost:9000/input-images/20230601123045_e7b1c3d4e5f6.jpg?X-Amz-Algorithm=...
+
+    ClassifyRequest:
+      type: object
+      required:
+        - bucket
+        - object
+      properties:
+        bucket:
+          type: string
+          description: MinIO bucket where the image is stored
+          example: input-images
+        object:
+          type: string
+          description: Object name of the image
+          example: 20230601123045_e7b1c3d4e5f6.jpg
+
+    ClassifyResponse:
+      type: object
+      properties:
+        bucket:
+          type: string
+          example: input-images
+        object:
+          type: string
+          example: 20230601123045_e7b1c3d4e5f6.jpg
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassificationResult'
+
+    ClassificationResult:
+      type: object
+      properties:
+        label:
+          type: string
+          example: golden retriever
+        confidence:
+          type: number
+          format: float
+          example: 0.92
+        class_id:
+          type: integer
+          example: 207
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: Failed to process image 

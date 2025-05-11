@@ -1,0 +1,7 @@
+tensorflow==2.12.0
+pillow==9.5.0
+minio==7.1.15
+redis==4.5.5
+kafka-python==2.0.2
+numpy==1.24.3
+pyyaml==6.0.1 

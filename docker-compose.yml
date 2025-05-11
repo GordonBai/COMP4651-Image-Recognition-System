@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # MinIO Storage
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Redis for caching
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # Zookeeper for Kafka
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+
+  # Kafka for event streaming
+  kafka:
+    image: wurstmeister/kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "image-uploads:1:1,image-results:1:1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - zookeeper
+
+  # Kafka UI for monitoring
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    ports:
+      - "8085:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
+
+  # Nginx API Gateway
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./api_gateway/configs/dev/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - minio
+      - openfaas-gateway
+
+  # OpenFaaS Gateway
+  openfaas-gateway:
+    image: openfaas/gateway:latest
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./serverless_functions:/home/app/functions
+    environment:
+      functions_provider_url: "http://faas-swarm:8080/"
+      read_timeout: "60s"
+      write_timeout: "60s"
+      upstream_timeout: "65s"
+
+  # Needed for OpenFaaS
+  faas-swarm:
+    image: openfaas/faas-swarm:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      gateway_url: "http://gateway:8080"
+
+volumes:
+  minio_data:
+  redis_data: 
