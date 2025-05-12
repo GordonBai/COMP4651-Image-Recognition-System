@@ -30,8 +30,8 @@ A scalable image recognition system built with open-source technologies:
 
 2. Copy and configure environment variables
    ```bash
-   cp .env.example .env
-   # Edit .env file with your settings
+   conda activate image-recognition
+   pip install -r requirements.txt
    ```
 
 3. Start the services
